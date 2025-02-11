@@ -21,6 +21,6 @@ def photons_sec_calc(D, QE, lambda_nm, pixel_size, sensor_width, sensor_height, 
     A_telescope = np.pi*(D*100 / 2)**2
     lambda_width = 6750-6450
 
-print(f'{round(magnitude_to_flux2(10))} photons/sec')
+print(f'{round(magnitude_to_flux2(18))} photons/sec')
 
 print(photons_sec_calc(APERTURE, QE, LAMBDA_NM, PIXEL_SIZE, SENSOR_WIDTH, SENSOR_HEIGHT, 10))

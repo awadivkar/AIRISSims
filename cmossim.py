@@ -75,7 +75,7 @@ def magnitude_to_flux2(magnitude, mag_zero_point=0):
                         # https://www.astronomy.ohio-state.edu/martini.10/usefuldata.html
     bandwidth = 6750-6450 # A
     F_vega_area = P_vega * bandwidth # photons cm-2 s-1
-    A = np.pi * ((APERTURE * 100)/2)**2
+    A = np.pi * ((APERTURE * 100)/2)**2 # cm2
     F_vega = F_vega_area * A # photons s-1
     
     flux = F_vega*10**(-0.4 * magnitude)
