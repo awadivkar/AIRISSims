@@ -7,9 +7,9 @@ from scipy.ndimage import gaussian_filter
 
 # Default Constants
 DEFAULTS = {
-    "Pixel Size (um)": 3.76e-6 * 3,
-    "Sensor Width (px)": int(9568 / 3),
-    "Sensor Height (px)": int(6380 / 3),
+    "Pixel Size (um)": 3.76e-6,
+    "Sensor Width (px)": int(9568),
+    "Sensor Height (px)": int(6380),
     "Aperture": 0.111,
     "QE": 0.6,
     "Wavelength (nm)": 640,
@@ -18,10 +18,9 @@ DEFAULTS = {
     "Readout Noise (e-)": 1,
     "Field of View (deg)": 10,
     "Max Magnitude": 20,
-    "Min Magnitude": 0,
-    "Zero Point": 10,
+    "Min Magnitude": 12,
+    "Zero Point": 18,
     "PSF (sigma)": 3,
-    "F_Vega": 2.55e-12,
     "Exposure Time": 10,
     "Num of Stars": 1000
 }

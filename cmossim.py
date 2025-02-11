@@ -8,7 +8,7 @@ PIXEL_SIZE = 3.76e-6*3  # meters
 SENSOR_WIDTH = int(9568/3)   # pixels
 SENSOR_HEIGHT = int(6380/3)  # pixels
 FOCAL_LENGTH = 0.2    # meters
-APERTURE = 0.111      # meters
+APERTURE = 11.1      # centimeters
 QE = 0.6              # Quantum efficiency (50%)
 LAMBDA_NM = 640       # Wavelength in nm
 DARK_CURRENT = 0.56   # e-/s
@@ -69,15 +69,15 @@ def magnitude_to_flux(magnitude, mag_zero_point=0):
     flux = 10**(-0.4 * (magnitude - mag_zero_point))
     return flux
 
-def magnitude_to_flux2(magnitude, mag_zero_point=0):
+def magnitude_to_flux2(magnitude):
     # Another way to calculate it
     P_vega = 702.0    # photons cm-2 s-1 A-1
                         # https://www.astronomy.ohio-state.edu/martini.10/usefuldata.html
     bandwidth = 6750-6450 # A
     F_vega_area = P_vega * bandwidth # photons cm-2 s-1
-    A = np.pi * ((APERTURE * 100)/2)**2 # cm2
+    A = np.pi * ((APERTURE)/2)**2 # cm2
     F_vega = F_vega_area * A # photons s-1
-    
+    # return F_vega
     flux = F_vega*10**(-0.4 * magnitude)
     return flux
 

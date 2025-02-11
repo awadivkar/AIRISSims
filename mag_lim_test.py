@@ -16,11 +16,9 @@ LAMBDA_NM = 640       # Wavelength in nm
 # else:
 #     print('we\'re so back')
 
-def photons_sec_calc(D, QE, lambda_nm, pixel_size, sensor_width, sensor_height, m):
-    P_0 = 995 # Photons/sec*cm^2*A of Vega (not accurate at wavelength)
-    A_telescope = np.pi*(D*100 / 2)**2
-    lambda_width = 6750-6450
+# def photons_sec_calc(D, QE, lambda_nm, pixel_size, sensor_width, sensor_height, m):
+#     P_0 = 995 # Photons/sec*cm^2*A of Vega (not accurate at wavelength)
+#     A_telescope = np.pi*(D*100 / 2)**2
+#     lambda_width = 6750-6450
 
-print(f'{round(magnitude_to_flux2(18))} photons/sec')
-
-print(photons_sec_calc(APERTURE, QE, LAMBDA_NM, PIXEL_SIZE, SENSOR_WIDTH, SENSOR_HEIGHT, 10))
+print(f'{(magnitude_to_flux2(0))} photons/sec')
