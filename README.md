@@ -27,16 +27,16 @@ Basic simulation GUI, doesn't include advanced methods, will probably deprecate 
 ### cmosgui2.py
 
 Most updated script. Will continue to update as more accurate simulation methods are used. Includes methods for:
-* Everything in [cmosgui.py](cmosguipy)
+* Everything in [cmosgui.py](#cmosguipy)
 * 3x3 Pixel Binning
 * Moving exposures (ie. taking long exposures while camera is moving)
 * Cosmic Ray Sims (not verified for physical accuracy, only simulates track-like (straight line), not spot-like (dot) or worm-like (polyline))
-* Uniform sky background (not verified for physical accuracy, see [skybackcalc.py](skybackcalcpy) for more info)
+* Uniform sky background (not verified for physical accuracy, see [skybackcalc.py](#skybackcalcpy) for more info)
 * SNR (signal to noise ratio) calculation (uses different definitions, will update soon)
 
 ### mag_lim_test.py
 
-Short script to try calculating magnitudes using functions from [cmossim.py](cmossimpy). Will probably deprecate soon.
+Short script to try calculating magnitudes using functions from [cmossim.py](#cmossimpy). Will probably deprecate soon.
 
 ### skybackcalc.py
 
@@ -44,7 +44,7 @@ Attempt to calculate physically accurate signal from sky using Rayleigh scatteri
 
 ### snrcalc.py
 
-Script to test SNR functions to implement in [cmosgui2.py](cmosguipy)
+Script to test SNR functions to implement in [cmosgui2.py](#cmosguipy)
 
 ## Contact
 
