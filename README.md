@@ -1,7 +1,7 @@
 # AIRIS SIMS
 
 ## Intro
-This repo is just a place to keep all the scripts used for work on AIRIS missions. You can find more information on our [website](https://washusatellite.com/), or on the page for NASA's [ADAPT mission](https://adapt.physics.wustl.edu/).
+This repo is just a place to keep all the scripts used for work on AIRIS missions. You can find more information on our [website](https://washusatellite.com/), or on the page for NASA's [ADAPT mission](https://adapt.physics.wustl.edu/). Most updated script is [cmosgui2.py](cmosgui2py) 
 
 ## Scripts
 ### cmossim.py
