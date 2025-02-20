@@ -1,4 +1,4 @@
-from cmossim import mag_limit_calc, magnitude_to_flux2
+from deprecated.cmossim import mag_limit_calc, magnitude_to_flux2
 import numpy as np
 
 PIXEL_SIZE = 3.76e-6  # meters
