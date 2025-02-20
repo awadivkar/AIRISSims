@@ -46,6 +46,20 @@ Attempt to calculate physically accurate signal from sky using Rayleigh scatteri
 
 Script to test SNR functions to implement in [cmosgui2.py](#cmosguipy)
 
+## Future Goals
+
+There's a lot of work that could potentially be done!
+
+* Implement physically accurate sky background calculations
+  * I've tried to calculate sky background signal due to atmospheric Rayleigh scattering (see skybackcalc.py) but I seem to be getting an extremely high value, one that washes out all stars. Not sure if this is unphysical or where my error is.
+* Implement accurate SNR calculations
+  * I've found a lot of different sources for how to accurately calculate SNR, so we need to figure out what's accurate, and what the SNR of our system is for a given magnitude. This will allow us to determine the limiting magnitude of our optical system.
+* Implement calibration pipeline
+  * Given these sample images, can we recover signal from the noise? We should design a calibration pipeline that takes sample images, simulated calibration frames (Flats, Darks, Bias) and the PSF map to generate cleaner images.
+* Simulate accurate night sky
+  * Currently, we just generate a bunch of randomly distributed point sources with randomly generated magnitudes. At some point, it may be interesting to implement some kind of global star map where we can actually model the real night sky, including some nebulae. 
+  * Another addendum to this would be also simulating the exact limits of our field of view. As in, we should eventually be able to take an input direction to point in and show what the sky would look like. We're also blocked by certain objects (like the balloon we're attached to) so a lot of our FOV is occulted.
+
 ## Contact
 
 Feel free to reach out if you have any comments/questions/recommendations or if you're just interested in the projects. 
