@@ -4,8 +4,9 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 from astropy.io import fits
 from scipy.ndimage import gaussian_filter
-
-# Test
+from skimage.transform import resize
+from skimage.io import imread
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 # Default Constants
 DEFAULTS = {
@@ -30,7 +31,9 @@ DEFAULTS = {
     "Cosmic Ray Count": 5,
     "Cosmic Ray Max Length": 20,
     "Cosmic Ray Intensity (e-)": 5000,
-    "Sky Background Rate (e-/px/s)": 0.1
+    "Sky Background Rate (e-/px/s)": 0.1,
+    "Image Scale Factor": 1.0,
+    "Image Magnitude": 1.0
 }
 
 ## Helper Functions
@@ -68,6 +71,97 @@ def add_sky_background(image, background_rate, exposure_time):
     # Check skybackcalc.py for a (presumably) more accurate calculation.
     return image + background_rate * exposure_time
 
+imported_image = []
+image_preview_canvas = None
+
+def import_image():
+    global imported_image
+    filename = filedialog.askopenfilename(
+        title="Select a PNG, JPEG, or FITS File",
+        filetypes=[
+            ("PNG Files", "*.png"),
+            ("FITS Files", "*.fits"),
+            ("JPG Files", "*.jpg"),
+            ("JPEG Files", "*.jpeg"),
+            ("All Files", "*.*"),
+        ]
+    )
+
+    if not filename:  # If user cancels, exit function safely
+        return
+
+    try:
+        if filename.lower().endswith(".fits"):
+            with fits.open(filename) as hdul:
+                imported_image = hdul[0].data.astype(float)
+        else:
+            imported_image = imread(filename, as_gray=True).astype(float)
+
+        if imported_image is None or imported_image.size == 0:
+            raise ValueError("Loaded image is empty or invalid.")
+
+        messagebox.showinfo("Success", "Image imported successfully!")
+        update_image_preview()
+
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to load image: {str(e)}")
+        imported_image = None  # Reset in case of failure
+
+def update_image_preview():
+    global image_preview_canvas, imported_image
+    if imported_image is not None:
+        fig, ax = plt.subplots(figsize=(4, 4))
+        ax.imshow(imported_image, cmap='gray', origin='lower')
+        ax.set_title("Imported Image Preview")
+        ax.axis('off')
+        
+        if image_preview_canvas:
+            image_preview_canvas.get_tk_widget().destroy()
+        
+        image_preview_canvas = FigureCanvasTkAgg(fig, master=preview_frame)
+        image_preview_canvas.get_tk_widget().pack()
+        image_preview_canvas.draw()
+
+def calculate_image_flux(image_magnitude, sensor_params):
+    """Calculate appropriate photon flux per pixel for the imported image."""
+    total_flux = 10 ** (-0.4 * (image_magnitude - sensor_params["Zero Point"]))
+    total_photons = total_flux * sensor_params["Exposure Time"]  # Adjust based on exposure time
+    total_photons *= sensor_params["QE"]  # Adjust based on quantum efficiency
+    # total_photons *= 0.1 # Adjust based on \delta 30 nm bandpass filter
+    pixel_flux = total_photons / np.sum(imported_image)  # Normalize across image pixels
+    return pixel_flux
+
+def add_imported_image(image, scale_factor=1.0, image_magnitude=10.0, sensor_params=None):
+    global imported_image
+    if imported_image is not None:
+        original_h, original_w = imported_image.shape
+        sensor_h, sensor_w = image.shape
+
+        # Compute new dimensions while maintaining aspect ratio
+        new_width = int(sensor_w * scale_factor)
+        new_height = int(original_h * (new_width / original_w))
+
+        # Ensure the resized image does not exceed sensor dimensions
+        new_height = min(new_height, sensor_h)
+        new_width = min(new_width, sensor_w)
+
+        resized_image = resize(imported_image, (new_height, new_width), anti_aliasing=True)
+        pixel_flux = calculate_image_flux(image_magnitude, sensor_params)
+        resized_image *= pixel_flux  # Scale the image based on calculated flux
+
+        # Compute centering positions
+        start_x = max(0, (sensor_w - new_width) // 2)
+        start_y = max(0, (sensor_h - new_height) // 2)
+
+        # Ensure the final cropped region does not exceed bounds
+        end_x = start_x + new_width
+        end_y = start_y + new_height
+
+        # Crop to ensure compatibility with NumPy broadcasting
+        image[start_y:end_y, start_x:end_x] += resized_image[:end_y - start_y, :end_x - start_x]
+
+    return image
+
 ### PSF addition ###
 
 def add_psf(image, x, y, flux, sigma):
@@ -88,7 +182,7 @@ def add_psf(image, x, y, flux, sigma):
 
 ### Main image generation function ###
 
-def generate_image(params, binning=False, cosmic_rays=False, sky_background=False, moving_exposures=False, snr_calc=False):
+def generate_image(params, binning=False, cosmic_rays=False, sky_background=False, moving_exposures=False, snr_calc=False, import_image=False):
     sensor_h = int(params["Sensor Height (px)"])
     sensor_w = int(params["Sensor Width (px)"])
     image = np.zeros((sensor_h, sensor_w))
@@ -123,6 +217,10 @@ def generate_image(params, binning=False, cosmic_rays=False, sky_background=Fals
             electrons = np.random.poisson(photons * params["QE"])
             add_psf(image, x, y, electrons, params["PSF (sigma)"])
     
+    # Add imported image if available
+    if import_image:
+        image = add_imported_image(image, params["Image Scale Factor"], params["Image Magnitude"], params)
+
     # Add cosmic rays if toggled
     if cosmic_rays:
         image = add_cosmic_rays(image,
@@ -185,7 +283,8 @@ def run_simulation():
                            cosmic_rays=cosmic_rays_var.get(),
                            sky_background=sky_background_var.get(),
                            moving_exposures=moving_exposures_var.get(),
-                           snr_calc = snr_calc_var.get())
+                           snr_calc=snr_calc_var.get(),
+                           import_image=import_image_var.get())
     plt.imshow(image, cmap='gray', origin='lower')
     plt.colorbar(label='Electron Count')
     plt.title('Simulated CMOS Image')
@@ -207,7 +306,8 @@ def save_file():
                                cosmic_rays=cosmic_rays_var.get(),
                                sky_background=sky_background_var.get(),
                                moving_exposures=moving_exposures_var.get(),
-                               snr_calc = snr_calc_var.get())
+                               snr_calc = snr_calc_var.get(),
+                               import_image = import_image_var.get())
         save_image(image, filename, format)
         messagebox.showinfo("Success", f"Image saved as {filename}")
 
@@ -237,12 +337,14 @@ cosmic_rays_var = tk.BooleanVar(value=False)
 sky_background_var = tk.BooleanVar(value=False)
 moving_exposures_var = tk.BooleanVar(value=False)
 snr_calc_var = tk.BooleanVar(value=False)
+import_image_var = tk.BooleanVar(value=False)
 
 tk.Checkbutton(toggle_frame, text="3x3 Binning", variable=binning_var).pack(anchor="w")
 tk.Checkbutton(toggle_frame, text="Add Cosmic Rays", variable=cosmic_rays_var).pack(anchor="w")
 tk.Checkbutton(toggle_frame, text="Add Sky Background", variable=sky_background_var).pack(anchor="w")
 tk.Checkbutton(toggle_frame, text="Simulate Moving Exposures", variable=moving_exposures_var).pack(anchor="w")
 tk.Checkbutton(toggle_frame, text="Calculate SNR", variable=snr_calc_var).pack(anchor="w")
+tk.Checkbutton(toggle_frame, text="Import Image", variable=import_image_var).pack(anchor="w")
 
 # Create frame for action buttons
 button_frame = tk.Frame(root)
@@ -250,5 +352,8 @@ button_frame.grid(row=1, column=0, columnspan=2, pady=10)
 
 tk.Button(button_frame, text="Run Simulation", command=run_simulation).grid(row=0, column=0, padx=5)
 tk.Button(button_frame, text="Save Image", command=save_file).grid(row=0, column=2, padx=5)
+tk.Button(button_frame, text="Import Image", command=import_image).grid(row=0, column=3, padx=5)
+preview_frame = tk.LabelFrame(root, text="Imported Image Preview", padx=10, pady=10)
+preview_frame.grid(row=0, column=2, padx=10, pady=10, sticky="n")
 
 root.mainloop()
