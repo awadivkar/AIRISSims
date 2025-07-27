@@ -1,7 +1,7 @@
 # AIRIS SIMS
 
 ## Intro
-This repo is just a place to keep all the scripts used for work on AIRIS missions. You can find more information on our [website](https://washusatellite.com/), or on the page for NASA's [ADAPT mission](https://adapt.physics.wustl.edu/). Most updated script is [cmosgui2.py](#cmosgui2py) 
+This repo is a place to keep scripts used for work on AIRIS missions. You can find more information on our [website](https://washusatellite.com/), or on the page for NASA's [ADAPT mission](https://adapt.physics.wustl.edu/). Most updated script is [cmosgui2.py](#cmosgui2py) 
 
 ## Scripts
 ### cmossim.py
@@ -51,7 +51,7 @@ Script to test SNR functions to implement in [cmosgui2.py](#cmosguipy)
 There's a lot of work that could potentially be done!
 
 * Implement physically accurate sky background calculations
-  * I've tried to calculate sky background signal due to atmospheric Rayleigh scattering (see skybackcalc.py) but I seem to be getting an extremely high value, one that washes out all stars. Not sure if this is unphysical or where my error is.
+  * I've tried to calculate sky background signal due to atmospheric Rayleigh scattering (see skybackcalc.py) but I seem to be getting an extremely high value, one that washes out all stars. Not sure if this is unphysical or we're cooked.
 * Implement accurate SNR calculations
   * I've found a lot of different sources for how to accurately calculate SNR, so we need to figure out what's accurate, and what the SNR of our system is for a given magnitude. This will allow us to determine the limiting magnitude of our optical system.
 * Implement calibration pipeline

@@ -21,7 +21,7 @@ params = {
     "Min Magnitude": 12,
     "Zero Point": 18,
     "PSF (sigma)": 3,
-    "Exposure Time": 10,
+    "Exposure Time": 8,
     "Num of Stars": 1000,
     # New parameters for moving exposures:
     "Trail Length (px)": 10,
