@@ -53,7 +53,7 @@ Basic simulation GUI, doesn't include advanced methods. Includes methods for:
 
 ## Future Goals
 
-There's a lot of work that could potentially be done!
+TODO:
 
 * Implement physically accurate sky background calculations
   * I've tried to calculate sky background signal due to atmospheric Rayleigh scattering (see skybackcalc.py) but I seem to be getting an extremely high value, one that washes out all stars. Not sure if this is unphysical or we're cooked.
@@ -64,6 +64,13 @@ There's a lot of work that could potentially be done!
 * Simulate accurate night sky
   * Naive implementation done, although this doesn't include any DSOs and it might not completely work during poles. Also uses the Initial GAIA Source List, far from the most comprehensive catalog out there. 
   * Another addendum to this would be also simulating the exact limits of our field of view. We're blocked by certain objects (like the balloon we're attached to) so a lot of our FOV is occulted.
+* Future GUI tweaks
+  * Move the "Import Image" Button and have it show up in a popup preview window
+  * Disable the RA/DEC entry fields if "Realistic Starfield" isn't selected (and disable "Num of Stars" when it is selected)
+  * Improve physicality of random distribution (magnitudes should be log-distributed)
+  * Make Progress Bar more comprehensive (multithreading?)
+  * Add finer control over the image viewer and exposure min/max controls
+  * Make the viewer more interactive? Include RA/DEC axes, identify stars and magnitudes?
 
 ## Contact
 
