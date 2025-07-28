@@ -276,28 +276,29 @@ def generate_image(params, binning=False, cosmic_rays=False, sky_background=Fals
             ra = float(ra_entry.get())
             dec = float(dec_entry.get())
             fov_height = params["Width Field of View (deg)"] * (params["Sensor Height (px)"] / params["Sensor Width (px)"])
+            if progress_update:
+                progress_update(10, "Querying star positions...")
+
             stars = query_realistic_starfield(ra, dec, fov_height, params["Width Field of View (deg)"], params["Max Magnitude"], params["Min Magnitude"])
             print("Stars found:", len(stars))
             if stars is None:
                 raise ValueError("No stars found in field of view.")
 
             if progress_update:
-                progress_update(10, "Querying star positions...")
+                progress_update(10, "Populating star positions...")
 
             x_positions, y_positions, magnitudes = generate_realistic_star_positions(params, stars)
-            if progress_update:
-                progress_update(10, "Populating star positions...")
-            current_progress = 'Populating star positions...'
-            win.update()
-
 
         except Exception as e:
             messagebox.showerror("Error", f"Realistic mode failed: {e}.")
     else:
-        x_positions, y_positions, magnitudes = generate_random_star_positions(params)
-        # print(f"Generated {len(x_positions)} star positions.")
         if progress_update:
            progress_update(20, "Generating random star positions...")
+        x_positions, y_positions, magnitudes = generate_random_star_positions(params)
+        # print(f"Generated {len(x_positions)} star positions.")
+    
+    if progress_update:
+        progress_update(20, "Adding star PSFs to image")
 
     if moving_exposures:
         # Divide the exposure into subexposures to simulate camera drift.
@@ -324,7 +325,7 @@ def generate_image(params, binning=False, cosmic_rays=False, sky_background=Fals
             add_psf(image, x, y, electrons, params["PSF (sigma)"])
 
     if progress_update:
-        progress_update(20, "Adding stars to image...")
+        progress_update(20, "Adding noise to image...")
 
     # Add imported image if available
     if import_image:
@@ -348,6 +349,9 @@ def generate_image(params, binning=False, cosmic_rays=False, sky_background=Fals
     readout_noise = np.random.normal(params["Readout Noise (e-)"], 1.5, image.shape).astype(int)
     image += dark_noise + readout_noise
     
+    if progress_update:
+            progress_update(20, "Finalizing image...")
+
     # Clip the image to sensor's saturation capacity
     image = np.clip(image, 0, params["Saturation Capacity (e-)"]).astype(int)
     
@@ -371,8 +375,7 @@ def generate_image(params, binning=False, cosmic_rays=False, sky_background=Fals
         snr = signal / noise
         print("Expected Signal: ", signal, "Expected Noise: ", noise, "Expected SNR: ", snr)
 
-    if progress_update:
-        progress_update(20, "Finalizing image...")
+    
     return image
 
 ### Image saving ###
@@ -397,14 +400,13 @@ def run_simulation():
         win.update()
 
     pbar['value'] = 0
+    update_progress(0, "Fetching Parameters")
     win.update()
 
     params = {key: float(entries[key].get()) if entries[key].get() else DEFAULTS[key]
               for key in DEFAULTS}
     params.update({key: float(opt_entries[key].get()) if opt_entries[key].get() else OPTIONAL_PARAMS[key]
               for key in OPTIONAL_PARAMS})
-    pbar.step(10)
-
 
     image = generate_image(params,
                            binning=binning_var.get(),
@@ -415,7 +417,7 @@ def run_simulation():
                            import_image=import_image_var.get(),
                            realistic=realistic_var.get(), progress_update=update_progress)
     
-    
+    update_progress(9.9, 'Loading image rendering')
 
     fig = plt.figure(facecolor=(0.2, 0.2, 0.2))
     # plt.style.use('dark_background')
@@ -442,7 +444,7 @@ def run_simulation():
         ax.spines[spine].set_color('white')
         ax.spines[spine].set_linewidth(0.5)
 
-    update_progress(19.9, "Displaying image...")
+    update_progress(0, "Displaying image...")
 
     Image = ax.imshow(image, cmap='gray', origin='lower')
     fig.subplots_adjust(bottom=0.2, left=0.1)
@@ -548,7 +550,7 @@ param_frame.grid(row=0, column=0, padx=10, sticky="new")
 entries = {}
 # List default parameters in GUI
 for i, (key, value) in enumerate(DEFAULTS.items()):
-    tk.Label(param_frame, text=key).grid(row=i, column=0, pady=6, sticky="w")
+    tk.Label(param_frame, text=key).grid(row=i, column=0, pady=4, sticky="w")
     entries[key] = tk.Entry(param_frame, width=12)
     entries[key].grid(row=i, column=1)
     entries[key].insert(0, str(value))
@@ -574,6 +576,9 @@ tk.Entry(realistic_toggle_frame, textvariable=dec_entry, width=10).grid(row=2, c
 toggle_frame = tk.LabelFrame(button_frame, text="Optional Features", padx=10, pady=10)
 toggle_frame.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
 
+# opt_vals = tk.Frame(toggle_frame).grid(row=0, column=0)
+# opt_bools = tk.Frame(toggle_frame).grid(row=0, column=1)
+
 binning_var = tk.BooleanVar(value=False)
 cosmic_rays_var = tk.BooleanVar(value=False)
 sky_background_var = tk.BooleanVar(value=False)
@@ -581,12 +586,12 @@ moving_exposures_var = tk.BooleanVar(value=False)
 snr_calc_var = tk.BooleanVar(value=False)
 import_image_var = tk.BooleanVar(value=False)
 
-tk.Checkbutton(toggle_frame, text="Simulate Moving Exposures", variable=moving_exposures_var).pack(anchor="w")
-tk.Checkbutton(toggle_frame, text="Add Cosmic Rays", variable=cosmic_rays_var).pack(anchor="w")
-tk.Checkbutton(toggle_frame, text="Add Sky Background", variable=sky_background_var).pack(anchor="w")
-tk.Checkbutton(toggle_frame, text="Import Image", variable=import_image_var).pack(anchor="w")
-tk.Checkbutton(toggle_frame, text="3x3 Binning", variable=binning_var).pack(anchor="w")
-tk.Checkbutton(toggle_frame, text="Calculate SNR", variable=snr_calc_var).pack(anchor="w")
+tk.Checkbutton(toggle_frame, text="Simulate Moving Exposures", variable=moving_exposures_var).grid(row=0, column=0, sticky='w')
+tk.Checkbutton(toggle_frame, text="Add Cosmic Rays", variable=cosmic_rays_var).grid(row=1, column=0, sticky='w')
+tk.Checkbutton(toggle_frame, text="Add Sky Background", variable=sky_background_var).grid(row=2, column=0, sticky='w')
+tk.Checkbutton(toggle_frame, text="Import Image", variable=import_image_var).grid(row=3, column=0, sticky='w')
+tk.Checkbutton(toggle_frame, text="3x3 Binning", variable=binning_var).grid(row=1, column=1, sticky='w')
+tk.Checkbutton(toggle_frame, text="Calculate SNR", variable=snr_calc_var).grid(row=2, column=1, sticky='w')
 
 opt_param_frame = tk.LabelFrame(button_frame, text="Optional Parameters", padx=10, pady=10)
 opt_param_frame.grid(row=2, column=0, padx=10, sticky="nsew")
@@ -618,7 +623,9 @@ for var, keys in toggle_map:
 
 for e in opt_entries.values():
     e.config(disabledbackground="#969595",
-             disabledforeground="#666666")
+             disabledforeground="#666666",
+             relief="flat",
+             bd=1,)
 
 # Create frame for action buttons
 button_frame = tk.Frame(root)

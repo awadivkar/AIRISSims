@@ -4,25 +4,6 @@
 This repo is a place to keep scripts used for work on AIRIS missions. You can find more information on our [website](https://washusatellite.com/), or on the page for NASA's [ADAPT mission](https://adapt.physics.wustl.edu/). Most updated script is [cmosgui2.py](#cmosgui2py) 
 
 ## Scripts
-### cmossim.py
-
-Where it all started. Now obselete, feel free to use if you aren't a fan of GUIs. Includes methods for: 
-* Function to calculate limiting magnitude. Trust at your own risk.
-* Random star distribution
-* Gaussian PSF
-* Photon Shot noise, Read Noise, Thermal Noise/Dark Current
-* Clipping/Saturation Capacity
-* Image Visualization (pyplot)
-
-### cmosgui.py
-
-Basic simulation GUI, doesn't include advanced methods, will probably deprecate soon. Includes methods for:
-* Random star distribution
-* Gaussian PSF
-* Photon Shot noise, Read Noise, Thermal Noise/Dark Current
-* Clipping/Saturation Capacity
-* Image saving (png, fits)
-* Image visualization (pyplot)
 
 ### cmosgui2.py
 
@@ -33,6 +14,8 @@ Most updated script. Will continue to update as more accurate simulation methods
 * Cosmic Ray Sims (not verified for physical accuracy, only simulates track-like (straight line), not spot-like (dot) or worm-like (polyline))
 * Uniform sky background (not verified for physical accuracy, see [skybackcalc.py](#skybackcalcpy) for more info)
 * SNR (signal to noise ratio) calculation (uses different definitions, will update soon)
+* Naive Rendering of Realistic Sky Backgrounds, taking into account RA and DEC (but the trig isn't fully calculated so there might be strange behavior around poles)
+* Fancy(er) GUI! Progress Bars! Dark Mode!
 
 ### mag_lim_test.py
 
@@ -46,6 +29,28 @@ Attempt to calculate physically accurate signal from sky using Rayleigh scatteri
 
 Script to test SNR functions to implement in [cmosgui2.py](#cmosguipy)
 
+### Deprecated Scripts
+
+#### cmossim.py
+
+Where it all started. Now obselete, feel free to use if you aren't a fan of GUIs. Includes methods for: 
+* Function to calculate limiting magnitude. Trust at your own risk.
+* Random star distribution
+* Gaussian PSF
+* Photon Shot noise, Read Noise, Thermal Noise/Dark Current
+* Clipping/Saturation Capacity
+* Image Visualization (pyplot)
+
+#### cmosgui.py
+
+Basic simulation GUI, doesn't include advanced methods. Includes methods for:
+* Random star distribution
+* Gaussian PSF
+* Photon Shot noise, Read Noise, Thermal Noise/Dark Current
+* Clipping/Saturation Capacity
+* Image saving (png, fits)
+* Image visualization (pyplot)
+
 ## Future Goals
 
 There's a lot of work that could potentially be done!
@@ -57,8 +62,8 @@ There's a lot of work that could potentially be done!
 * Implement calibration pipeline
   * Given these sample images, can we recover signal from the noise? We should design a calibration pipeline that takes sample images, simulated calibration frames (Flats, Darks, Bias) and the PSF map to generate cleaner images.
 * Simulate accurate night sky
-  * Currently, we just generate a bunch of randomly distributed point sources with randomly generated magnitudes. At some point, it may be interesting to implement some kind of global star map where we can actually model the real night sky, including some nebulae. 
-  * Another addendum to this would be also simulating the exact limits of our field of view. As in, we should eventually be able to take an input direction to point in and show what the sky would look like. We're also blocked by certain objects (like the balloon we're attached to) so a lot of our FOV is occulted.
+  * Naive implementation done, although this doesn't include any DSOs and it might not completely work during poles. Also uses the Initial GAIA Source List, far from the most comprehensive catalog out there. 
+  * Another addendum to this would be also simulating the exact limits of our field of view. We're blocked by certain objects (like the balloon we're attached to) so a lot of our FOV is occulted.
 
 ## Contact
 
