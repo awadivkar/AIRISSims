@@ -5,7 +5,8 @@ This repo is a place to keep scripts used for work on AIRIS missions. You can fi
 
 ## Scripts
 
-### cmosgui2.py
+### fullcmossim.py
+#### (previously cmosgui2.py)
 
 Most updated script. Will continue to update as more accurate simulation methods are used. Includes methods for:
 * Everything in [cmosgui.py](#cmosguipy)
@@ -16,6 +17,11 @@ Most updated script. Will continue to update as more accurate simulation methods
 * SNR (signal to noise ratio) calculation (uses different definitions, will update soon)
 * Naive Rendering of Realistic Sky Backgrounds, taking into account RA and DEC (but the trig isn't fully calculated so there might be strange behavior around poles)
 * Fancy(er) GUI! Progress Bars! Dark Mode!
+
+### singlecmossim.py
+
+* Same functionality as [fullcmossim.py](#fullcmossimpy) but for a single centered star
+* Useful for more accurate SNR calculations
 
 ### mag_lim_test.py
 

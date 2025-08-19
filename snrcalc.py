@@ -1,54 +1,98 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import tkinter as tk
-from tkinter import filedialog, messagebox
-from astropy.io import fits
-from scipy.ndimage import gaussian_filter
+import pandas as pd
+from scipy.optimize import curve_fit
 
 # Default Constants (including new parameters)
-params = {
+DEFAULTS = {
     "Pixel Size (um)": 3.76e-6,
-    "Sensor Width (px)": 9568,
-    "Sensor Height (px)": 6380,
+    "Sensor Width (px)": 50,
+    "Sensor Height (px)": 50,
     "Aperture": 0.111,
     "QE": 0.6,
     "Wavelength (nm)": 640,
     "Dark Current (e-)": 0.56,
     "Saturation Capacity (e-)": 51000,
     "Readout Noise (e-)": 1,
-    "Field of View (deg)": 10,
+    "Width Field of View (deg)": 10,
+    "Min Magnitude": 10,
     "Max Magnitude": 20,
-    "Min Magnitude": 12,
     "Zero Point": 18,
     "PSF (sigma)": 3,
-    "Exposure Time": 8,
-    "Num of Stars": 1000,
-    # New parameters for moving exposures:
+    "Exposure Time": 10,
+}
+
+OPTIONAL_PARAMS = {
     "Trail Length (px)": 10,
     "Drift Angle (deg)": 0,
-    # New parameters for cosmic rays:
     "Cosmic Ray Count": 5,
     "Cosmic Ray Max Length": 20,
     "Cosmic Ray Intensity (e-)": 5000,
-    # New parameter for sky background:
-    "Sky Background Rate (e-/px/s)": 0.1
+    "Sky Background Rate (e-/px/s)": 0.1,
 }
 
-sky_background_var = True
+var = 'SNR'
+datapath = 'snrstats.csv'
+df = pd.read_csv(datapath)
+df = df[df[' Magnitude'] > 10]
 
-signal = params["Exposure Time"] * params["QE"] * 10**(-0.4 * (params["Min Magnitude"] - params["Zero Point"]))
-noise = np.sqrt(signal + int(sky_background_var) * params["Sky Background Rate (e-/px/s)"] + params["Dark Current (e-)"] * params["Exposure Time"] + params["Readout Noise (e-)"]**2)
-snr = signal / noise
-print("Expected Signal: ", signal, "Expected Noise: ", noise, "Expected SNR: ", snr)
+def fit_func(x, a, b, c):
+    return a * np.exp(-b * x) + c
 
-x = np.linspace(0, 20, 100)
-y = params["Exposure Time"] * params["QE"] * 10**(-0.4 * (x - params["Zero Point"]))
-y = y / noise
-plt.plot(x, y)
-plt.yscale("log")
-plt.axhline(y=3, color='r', linestyle='--')
-plt.xlabel("Magnitude")
-plt.ylabel("SNR")
-plt.title("SNR vs. Magnitude")
+# Fit the data to the function
+popt, pcov = curve_fit(fit_func, df[' Magnitude'], df[' ' + var])
+# Generate x values for the fitted curve
+x_fit = np.linspace(df[' Magnitude'].min(), df[' Magnitude'].max(), 100)
+# Calculate the fitted y values
+y_fit = fit_func(x_fit, *popt)
+# Plot the data and the fitted curve
+
+
+plt.figure(figsize=(10, 6))
+plt.scatter(df[' Magnitude'], df[' ' + var], marker='o', alpha=0.1, color='b', label=f'{var} vs Magnitude')
+plt.plot(x_fit, y_fit, color='orange', label=f'Fitted Curve: {var} = {popt[0]:.2f} * exp(-{popt[1]:.2f} * Magnitude) + {popt[2]:.2f}')
+# plt.axhline(y=10, color='g', linestyle='--', label='SNR = 10 Threshold')
+# plt.axhline(y=5, color='y', linestyle='--', label='SNR = 5 Threshold')
+# plt.axhline(y=3, color='r', linestyle='--', label='SNR = 3 Threshold')
+plt.xlabel('Magnitude')
+plt.ylabel(var)
+# plt.yscale('log')
+plt.title(f'{var} vs Magnitude')
 plt.grid(True)
+plt.legend()
 plt.show()
+
+
+
+# plt.hist(df[' Magnitude'], bins=200, color='blue', alpha=0.7)
+# plt.xlabel('Magnitude')
+# plt.ylabel('Frequency')
+# plt.title('Histogram of Magnitude')
+# plt.grid(True)
+# plt.show()
+
+
+
+# sky_background_var = False
+
+# signal = DEFAULTS["Exposure Time"] * DEFAULTS["QE"] * 10**(-0.4 * (DEFAULTS["Min Magnitude"] - DEFAULTS["Zero Point"]))
+# noise = np.sqrt(signal 
+#                 + int(sky_background_var) * OPTIONAL_PARAMS["Sky Background Rate (e-/px/s)"] 
+#                 + DEFAULTS["Dark Current (e-)"] * DEFAULTS["Exposure Time"] 
+#                 + DEFAULTS["Readout Noise (e-)"]**2)
+# snr = signal / noise
+# print("Expected Signal: ", signal, "Expected Noise: ", noise, "Expected SNR: ", snr)
+
+# x = np.linspace(0, 20, 100)
+# y = DEFAULTS["Exposure Time"] * DEFAULTS["QE"] * 10**(-0.4 * (x - DEFAULTS["Zero Point"]))
+# y = y / noise
+# plt.plot(x, y)
+# plt.yscale("log")
+# plt.axhline(y=3, color='r', linestyle='--')
+# plt.xlabel("Magnitude")
+# plt.ylabel("SNR")
+# plt.title("SNR vs. Magnitude")
+# plt.grid(True)
+# plt.show()
+

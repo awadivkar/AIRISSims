@@ -5,7 +5,6 @@ from matplotlib.widgets import Slider
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from astropy.io import fits
-from scipy.ndimage import gaussian_filter
 import scipy.stats as stats
 from skimage.transform import resize
 from skimage.io import imread
@@ -14,8 +13,6 @@ from astroquery.vizier import Vizier
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 from tqdm import tqdm
-from pycallgraph2 import PyCallGraph
-from pycallgraph2.output import GraphvizOutput
 from PIL import Image, ImageTk
 
 # Default Constants
@@ -36,14 +33,6 @@ DEFAULTS = {
     "PSF (sigma)": 3,
     "Exposure Time": 10,
     "Num of Stars": 1000
-    # "Trail Length (px)": 10,
-    # "Drift Angle (deg)": 0,
-    # "Cosmic Ray Count": 5,
-    # "Cosmic Ray Max Length": 20,
-    # "Cosmic Ray Intensity (e-)": 5000,
-    # "Sky Background Rate (e-/px/s)": 0.1,
-    # "Image Scale Factor": 1.0,
-    # "Image Magnitude": 1.0
 }
 
 OPTIONAL_PARAMS = {
@@ -298,7 +287,7 @@ def generate_image(params, binning=False, cosmic_rays=False, sky_background=Fals
         # print(f"Generated {len(x_positions)} star positions.")
     
     if progress_update:
-        progress_update(20, "Adding star PSFs to image")
+        progress_update(20, "Adding star PSFs to image...")
 
     if moving_exposures:
         # Divide the exposure into subexposures to simulate camera drift.
@@ -459,6 +448,7 @@ def run_simulation():
         new_vmax = vmax_slider.val
         Image.set_clim(new_vmin, new_vmax)
         fig.canvas.draw_idle() # Redraw the figure
+        plt.draw() # Update the canvas
 
     vmin_slider.on_changed(update)
     vmax_slider.on_changed(update)
@@ -506,7 +496,7 @@ def progress_window():
     status_label.grid(row=1, column=0, padx=100, sticky='ew')
     # status_label.pack(pady=5)
     
-    # new_window.geometry("400x100")
+    new_window.geometry("+100+100")
     new_window.resizable(False, False)
 
     progress_bar = ttk.Progressbar(new_window, mode="determinate", length=300, orient="horizontal", maximum=100)
