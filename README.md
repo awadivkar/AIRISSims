@@ -23,6 +23,16 @@ Most updated script. Will continue to update as more accurate simulation methods
 * Same functionality as [fullcmossim.py](#fullcmossimpy) but for a single centered star
 * Useful for more accurate SNR calculations
 
+### snrcmossim.py
+
+* Same functionality as [fullcmossim.py](#fullcmossimpy) but allows for repeated runs (outputting data to [snrstats.csv](#snrstatscsv))
+
+#### snrstats.csv
+
+* Output data for [snrcmossim.py](#snrcmossimpy)
+* Contains data for 9900 runs between magnitude 0 and 25, with 99 bins and 100 samples for each bin
+* Inaccurate for magnitudes under 10 because the SNR calculation uses a radial mask but the PSF code uses a square mask to generate the star, so the star starts bleeding into the noise calculation
+
 ### mag_lim_test.py
 
 Short script to try calculating magnitudes using functions from [cmossim.py](#cmossimpy). Will probably deprecate soon.
@@ -70,6 +80,7 @@ There's a lot of work that could potentially be done!
 * Simulate accurate night sky
   * Naive implementation done, although this doesn't include any DSOs and it might not completely work during poles. Also uses the Initial GAIA Source List, far from the most comprehensive catalog out there. 
   * Another addendum to this would be also simulating the exact limits of our field of view. We're blocked by certain objects (like the balloon we're attached to) so a lot of our FOV is occulted.
+* Make the PSF a radial mask instead of a square
 
 ## Contact
 
