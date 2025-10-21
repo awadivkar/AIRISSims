@@ -6,7 +6,6 @@ This repo is a place to keep scripts used for work on AIRIS missions. You can fi
 ## Scripts
 
 ### fullcmossim.py
-#### (previously cmosgui2.py)
 
 Most updated script. Will continue to update as more accurate simulation methods are used. Includes methods for:
 * Everything in [cmosgui.py](#cmosguipy)
@@ -23,15 +22,18 @@ Most updated script. Will continue to update as more accurate simulation methods
 * Same functionality as [fullcmossim.py](#fullcmossimpy) but for a single centered star
 * Useful for more accurate SNR calculations
 
-### snrcmossim.py
+### SNR_sampling
 
-* Same functionality as [fullcmossim.py](#fullcmossimpy) but allows for repeated runs (outputting data to [snrstats.csv](#snrstatscsv))
+* Folder that contains scripts and data from testing SNR over certain parameters based on the current implementation of our optical train
 
-#### snrstats.csv
+#### [var]_snrcmossim.py
 
-* Output data for [snrcmossim.py](#snrcmossimpy)
-* Contains data for 9900 runs between magnitude 0 and 25, with 99 bins and 100 samples for each bin
-* Inaccurate for magnitudes under 10 because the SNR calculation uses a radial mask but the PSF code uses a square mask to generate the star, so the star starts bleeding into the noise calculation
+* Script that iterates over certain variable(s) to resolve SNR over distribution of said variable. 
+* Same functionality as [fullcmossim.py](#fullcmossimpy) but allows for repeated runsl, outputting data to[var]stats.csv
+
+#### [var]graph.py
+
+* Simple plot of the current results stored in the relevant [var]stats.csv
 
 ### mag_lim_test.py
 

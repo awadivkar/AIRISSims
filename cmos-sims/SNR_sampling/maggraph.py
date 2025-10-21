@@ -38,7 +38,7 @@ OPTIONAL_PARAMS = {
 }
 
 var = 'SNR'
-datapath = 'cmos-sims/snrstats.csv'
+datapath = 'cmos-sims/SNR_sampling/magstats.csv'
 df = pd.read_csv(datapath)
 df = df[df['Magnitude'] > 10]
 
