@@ -40,7 +40,7 @@ heatmap = np.divide(heatmap, counts, out=np.zeros_like(heatmap), where=counts !=
 # heatmap[heatmap <= 0] = heatmap[heatmap > 0].min()
 heatmap[heatmap == 0] = np.nan  # Mask zeros for better visualization
 
-fig, ax = plt.subplots(2, 4, figsize=(20, 10))
+fig, ax = plt.subplots(2, 4, figsize=(24, 10))
 
 img = ax[0][0].imshow(
     heatmap.T,
@@ -61,7 +61,7 @@ contour = ax[0][0].contour(
 
 ax[0][0].clabel(contour, fmt={3: 'SNR=3', 5: 'SNR=5', 10: 'SNR=10'}, colors='red', fontsize=10)
 
-fig.colorbar(img, norm=Normalize(vmin=1, vmax=np.nanmax(heatmap)), label='SNR (log scale)', ax=ax[0][0])
+fig.colorbar(img, norm=Normalize(vmin=1, vmax=np.nanmax(heatmap)), label='SNR', ax=ax[0][0])
 ax[0][0].set_xlabel('Exposure Time')
 ax[0][0].set_ylabel('Magnitude')
 ax[0][0].set_title('SNR Heatmap')
@@ -123,7 +123,7 @@ model_log = ax[1][1].imshow(
 model_log_cont = ax[1][1].contour(Xc, Yc, Zg, levels=levels, colors='red',
               linewidths=1.5, linestyles='--')
 ax[1][1].clabel(model_log_cont, fmt={3: 'SNR=3', 5: 'SNR=5', 10: 'SNR=10'}, colors='red', fontsize=10)
-fig.colorbar(model_log, label='Predicted SNR', ax=ax[1][1])
+fig.colorbar(model_log, label='Predicted SNR (Log Scale)', ax=ax[1][1])
 ax[1][1].set_xlabel('Exposure Time')
 ax[1][1].set_ylabel('Magnitude')
 ax[1][1].set_title('Fitted SNR Model and SNR=5 Threshold (Log Scale)')

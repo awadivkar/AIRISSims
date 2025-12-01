@@ -22,3 +22,7 @@ LAMBDA_NM = 640       # Wavelength in nm
 #     lambda_width = 6750-6450
 
 print(f'{(magnitude_to_flux2(0))} photons/sec')
+# Energy flux calculation
+p_flux = magnitude_to_flux2(0)
+p_energy = p_flux * 1.60218e-19  # Convert from photons/sec to Joules/sec
+print(f'{p_energy} Joules/sec')
