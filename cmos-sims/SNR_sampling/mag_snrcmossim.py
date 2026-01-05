@@ -207,12 +207,15 @@ def generate_image(params, magnitude, binning=False, cosmic_rays=False, sky_back
         if debug: print('Calculating SNR')
         # Calculate the signal-to-noise ratio.
         
+        if binning: psf = params["PSF (sigma)"] / 3
+        else: psf = params["PSF (sigma)"]
+        
         # geometry
         H, W = image.shape
         cx, cy = W//2, H//2
-        r_ap = int(3 * params["PSF (sigma)"])           # star aperture
-        r_in  = r_ap + 2*max(1, int(params["PSF (sigma)"]))   # background annulus
-        r_out = r_in + 3*max(1, int(params["PSF (sigma)"]))
+        r_ap = int(3 * psf)           # star aperture
+        r_in  = r_ap + 2*max(1, int(psf))   # background annulus
+        r_out = r_in + 3*max(1, int(psf))
 
         yy, xx = np.ogrid[:H, :W]
         rr2 = (xx - cx)**2 + (yy - cy)**2
@@ -241,8 +244,9 @@ def generate_image(params, magnitude, binning=False, cosmic_rays=False, sky_back
         SNR_empirical = excess_flux / noise_emp
 
         if debug: print("Mask Radius: ", r_ap, ", Signal: ", excess_flux, ", Noise: ", noise_emp, ", SNR: ", SNR_empirical)
+        if not np.isnan(SNR_empirical): print(f"SNR: {SNR_empirical:.2f} for Magnitude: {magnitude:.2f}")
 
-        with open('cmos-sims/snrstats.csv', 'a', newline='') as csvfile:
+        with open('cmos-sims/SNR_sampling/mag_stats(3x3).csv', 'a', newline='') as csvfile:
             writer = csv.writer(csvfile)
             # Write the header if the file is empty
             if csvfile.tell() == 0:

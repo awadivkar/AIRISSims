@@ -209,12 +209,15 @@ def generate_image(params, exposure_time, magnitude, binning=False, cosmic_rays=
         if debug: print('Calculating SNR')
         # Calculate the signal-to-noise ratio.
         
+        if binning: psf = params["PSF (sigma)"] / 3
+        else: psf = params["PSF (sigma)"]
+
         # geometry
         H, W = image.shape
         cx, cy = W//2, H//2
-        r_ap = int(3 * params["PSF (sigma)"])           # star aperture
-        r_in  = r_ap + 2*max(1, int(params["PSF (sigma)"]))   # background annulus
-        r_out = r_in + 3*max(1, int(params["PSF (sigma)"]))
+        r_ap = int(3 * psf)           # star aperture
+        r_in  = r_ap + 2*max(1, int(psf))   # background annulus
+        r_out = r_in + 3*max(1, int(psf))
 
         yy, xx = np.ogrid[:H, :W]
         rr2 = (xx - cx)**2 + (yy - cy)**2

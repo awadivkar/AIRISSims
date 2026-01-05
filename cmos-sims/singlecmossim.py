@@ -197,22 +197,48 @@ def generate_image(params, binning=False, cosmic_rays=False, sky_background=Fals
         image = apply_binning(image, bin_size=3)
     
     if snr_calc:
+        
         print('Calculating SNR')
         # Calculate the signal-to-noise ratio.
         
-        # Create a circular mask
-        center_x, center_y = image.shape[1] // 2, image.shape[0] // 2
-        radius = int(3 * params["PSF (sigma)"])  # Adjust radius based on PSF sigma
-        y, x = np.ogrid[:image.shape[0], :image.shape[1]]
-        mask = (x - center_x)**2 + (y - center_y)**2 <= radius**2
+        if binning: psf = params["PSF (sigma)"] / 3
+        else: psf = params["PSF (sigma)"]
 
-        # Calculate signal as the average pixel value inside the mask
-        signal = image[mask].mean()
+        # geometry
+        H, W = image.shape
+        cx, cy = W//2, H//2
+        r_ap = int(3 * psf)           # star aperture
+        r_in  = r_ap + 2*max(1, int(psf))   # background annulus
+        r_out = r_in + 3*max(1, int(psf))
 
-        # Calculate noise as the standard deviation of pixel values outside the mask
-        noise = image[~mask].std()
+        yy, xx = np.ogrid[:H, :W]
+        rr2 = (xx - cx)**2 + (yy - cy)**2
 
-        print("Mask Radius: ", radius, ", Signal: ", signal, ", Noise: ", noise, ", SNR: ", signal / noise)
+        ap_mask  = rr2 <= r_ap**2
+        bkg_mask = (rr2 >= r_in**2) & (rr2 <= r_out**2)
+
+        # background statistics from annulus
+        bkg_vals = image[bkg_mask]
+        mu_b  = np.mean(bkg_vals)          # background mean (per pixel)
+        sig_b = np.std(bkg_vals, ddof=1)   # background std (per pixel)
+
+        # STAR EXCESS FLUX (sum of background-subtracted pixels in the aperture)
+        ap_vals = image[ap_mask]
+        N_ap  = ap_vals.size
+        N_bkg = bkg_vals.size
+
+        excess_flux = np.sum(ap_vals - mu_b)   # this is the signal (in image units)
+
+        # Empirical noise on that sum: background noise inside aperture + error of background mean
+        # Variance of sum from background fluctuations in aperture: N_ap * sig_b^2
+        # Variance from background-mean estimate used for subtraction: (N_ap^2) * (sig_b^2 / N_bkg)
+        var_emp = N_ap * sig_b**2 + (N_ap**2) * (sig_b**2 / N_bkg)
+        noise_emp = np.sqrt(var_emp)
+
+        SNR_empirical = excess_flux / noise_emp
+
+        print("Mask Radius: ", r_ap, ", Signal: ", excess_flux, ", Noise: ", noise_emp, ", SNR: ", SNR_empirical)
+        if not np.isnan(SNR_empirical): print(f"SNR: {SNR_empirical:.2f} for Magnitude: {params["Star Magnitude"]:.2f}")
 
         # This is a simple estimate assuming Poisson noise for CCD/CMOS.
         # signal = params["Exposure Time"] * params["QE"] * 10**(-0.4 * (params["Min Magnitude"] - params["Zero Point"]))
