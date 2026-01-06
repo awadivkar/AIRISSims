@@ -46,6 +46,16 @@ OPTIONAL_PARAMS = {
     "Image Magnitude": 1.0
 }
 
+TRANSIENT_PARAMS = {
+    "Transient Rise End (s)": 1.0,
+    "Transient Decay Start (s)": 5.0,
+    "Transient Max Magnitude": 10.0,
+    "Transient Coordinates (X, Y)": (4784, 3190),
+    "Exposure Length (s)": 10.0,
+    "Exposure Amount": 1,
+    "Output Repository": "./transient_outputs"
+}
+
 ## Helper Functions
 
 def apply_binning(image, bin_size=3):
@@ -253,7 +263,7 @@ def generate_random_star_positions(params):
 
     return x_positions, y_positions, magnitudes
 
-def generate_image(params, binning=False, cosmic_rays=False, sky_background=False, moving_exposures=False, snr_calc=False, import_image=False, realistic=False, pbar=None, win=None, progress_update=None):
+def generate_image(params, transient=False, binning=False, cosmic_rays=False, sky_background=False, moving_exposures=False, snr_calc=False, import_image=False, realistic=False, pbar=None, win=None, progress_update=None):
 
     image = np.zeros((int(params["Sensor Height (px)"]), int(params["Sensor Width (px)"])))
     if progress_update:
@@ -285,7 +295,7 @@ def generate_image(params, binning=False, cosmic_rays=False, sky_background=Fals
            progress_update(20, "Generating random star positions...")
         x_positions, y_positions, magnitudes = generate_random_star_positions(params)
         # print(f"Generated {len(x_positions)} star positions.")
-    
+
     if progress_update:
         progress_update(20, "Adding star PSFs to image...")
 
@@ -396,8 +406,11 @@ def run_simulation():
               for key in DEFAULTS}
     params.update({key: float(opt_entries[key].get()) if opt_entries[key].get() else OPTIONAL_PARAMS[key]
               for key in OPTIONAL_PARAMS})
+    params.update({key: float(trans_entries[key].get()) if trans_entries[key].get() else TRANSIENT_PARAMS[key]
+              for key in TRANSIENT_PARAMS})
 
     image = generate_image(params,
+                           transient=transient_var.get(),
                            binning=binning_var.get(),
                            cosmic_rays=cosmic_rays_var.get(),
                            sky_background=sky_background_var.get(),
@@ -406,64 +419,69 @@ def run_simulation():
                            import_image=import_image_var.get(),
                            realistic=realistic_var.get(), progress_update=update_progress)
     
-    update_progress(9.9, 'Loading image rendering')
+    if not transient_var.get():
+        update_progress(9.9, 'Loading image rendering')
 
-    fig = plt.figure(facecolor=(0.2, 0.2, 0.2))
-    # plt.style.use('dark_background')
-    # fig = plt.figure(figsize=(8, 6))
+        fig = plt.figure(facecolor=(0.2, 0.2, 0.2))
+        # plt.style.use('dark_background')
+        # fig = plt.figure(figsize=(8, 6))
 
-    ax = fig.add_subplot(111)
+        ax = fig.add_subplot(111)
 
-    COLOR = 'white'
-    mpl.rcParams['text.color'] = COLOR
-    mpl.rcParams['axes.labelcolor'] = COLOR
-    mpl.rcParams['xtick.color'] = COLOR
-    mpl.rcParams['ytick.color'] = COLOR
-    mpl.rcParams['axes.edgecolor'] = COLOR
-    mpl.rcParams['figure.facecolor'] = (0.2, 0.2, 0.2)
-    mpl.rcParams['figure.edgecolor'] = COLOR
-    mpl.rcParams['font.family'] = 'monospace'
+        COLOR = 'white'
+        mpl.rcParams['text.color'] = COLOR
+        mpl.rcParams['axes.labelcolor'] = COLOR
+        mpl.rcParams['xtick.color'] = COLOR
+        mpl.rcParams['ytick.color'] = COLOR
+        mpl.rcParams['axes.edgecolor'] = COLOR
+        mpl.rcParams['figure.facecolor'] = (0.2, 0.2, 0.2)
+        mpl.rcParams['figure.edgecolor'] = COLOR
+        mpl.rcParams['font.family'] = 'monospace'
 
-    ax.set_title("Simulated CMOS Image", color='white')
-    ax.set_aspect('equal')
+        ax.set_title("Simulated CMOS Image", color='white')
+        ax.set_aspect('equal')
 
-    ax.tick_params(axis='both', left=False, top=False, right=False, bottom=False, labelleft=False, labeltop=False, labelright=False, labelbottom=False)
-    spines = ['top', 'bottom', 'left', 'right']
-    for spine in spines:
-        ax.spines[spine].set_color('white')
-        ax.spines[spine].set_linewidth(0.5)
+        ax.tick_params(axis='both', left=False, top=False, right=False, bottom=False, labelleft=False, labeltop=False, labelright=False, labelbottom=False)
+        spines = ['top', 'bottom', 'left', 'right']
+        for spine in spines:
+            ax.spines[spine].set_color('white')
+            ax.spines[spine].set_linewidth(0.5)
 
-    update_progress(0, "Displaying image...")
+        update_progress(0, "Displaying image...")
 
-    Image = ax.imshow(image, cmap='gray', origin='lower')
-    fig.subplots_adjust(bottom=0.2, left=0.1)
-    fig.colorbar(Image, ax=ax, label='Electron Count', shrink=0.8)
-    vmin = fig.add_axes([0.15, 0.15, 0.7, 0.02])
-    vmax = fig.add_axes([0.15, 0.10, 0.7, 0.02])
-    vmin_slider = Slider(vmin, 'Min Value', 0, image.max(), valinit=0, color='red')
-    vmax_slider = Slider(vmax, 'Max Value', 0, image.max(), valinit=image.max(), color='red')
-    
-    def update(val):
-        new_vmin = vmin_slider.val
-        new_vmax = vmax_slider.val
-        Image.set_clim(new_vmin, new_vmax)
-        fig.canvas.draw_idle() # Redraw the figure
-        plt.draw() # Update the canvas
+        Image = ax.imshow(image, cmap='gray', origin='lower')
+        fig.subplots_adjust(bottom=0.2, left=0.1)
+        fig.colorbar(Image, ax=ax, label='Electron Count', shrink=0.8)
+        vmin = fig.add_axes([0.15, 0.15, 0.7, 0.02])
+        vmax = fig.add_axes([0.15, 0.10, 0.7, 0.02])
+        vmin_slider = Slider(vmin, 'Min Value', 0, image.max(), valinit=0, color='red')
+        vmax_slider = Slider(vmax, 'Max Value', 0, image.max(), valinit=image.max(), color='red')
+        
+        def update(val):
+            new_vmin = vmin_slider.val
+            new_vmax = vmax_slider.val
+            Image.set_clim(new_vmin, new_vmax)
+            fig.canvas.draw_idle() # Redraw the figure
+            plt.draw() # Update the canvas
 
-    vmin_slider.on_changed(update)
-    vmax_slider.on_changed(update)
+        vmin_slider.on_changed(update)
+        vmax_slider.on_changed(update)
 
-    # fig.tight_layout()
-    win.destroy()
-    plt.show()
+        # fig.tight_layout()
+        win.destroy()
+        plt.show()
 
-    # Plot histogram of pixel values
-    # mu, sigma = np.mean(image), np.std(image)
-    # x = np.linspace(mu - 3*sigma, mu + 3*sigma, 100)
-    # plt.plot(x, 6*stats.norm.pdf(x, mu, sigma), linewidth=0.5, label='Gaussian Fit')
-    # plt.hist(image.flatten(), bins=100, range=(0, image.max()))
-    # plt.yscale('log')
-    # plt.show()
+        # Plot histogram of pixel values
+        # mu, sigma = np.mean(image), np.std(image)
+        # x = np.linspace(mu - 3*sigma, mu + 3*sigma, 100)
+        # plt.plot(x, 6*stats.norm.pdf(x, mu, sigma), linewidth=0.5, label='Gaussian Fit')
+        # plt.hist(image.flatten(), bins=100, range=(0, image.max()))
+        # plt.yscale('log')
+        # plt.show()
+    else:
+        update_progress(10, "Saving transient outputs...")
+        messagebox.showinfo("Simulation Complete", "Transient simulation complete. Outputs saved to specified repository.")
+        win.destroy()
 
 def save_file():
     filename = filedialog.asksaveasfilename(defaultextension=".png",
@@ -475,7 +493,11 @@ def save_file():
         # Retrieve optional parameters
         params.update({key: float(entries[key].get()) if entries[key].get() else OPTIONAL_PARAMS[key]
                        for key in OPTIONAL_PARAMS})
+        params.update({key: float(entries[key].get()) if entries[key].get() else TRANSIENT_PARAMS[key]
+                       for key in TRANSIENT_PARAMS})
+
         image = generate_image(params,
+                               transient=transient_var.get(),
                                binning=binning_var.get(),
                                cosmic_rays=cosmic_rays_var.get(),
                                sky_background=sky_background_var.get(),
@@ -545,8 +567,69 @@ for i, (key, value) in enumerate(DEFAULTS.items()):
     entries[key].grid(row=i, column=1)
     entries[key].insert(0, str(value))
 
+
+# Create frame for transient options
+transient_frame = tk.LabelFrame(root, text="Transient Options", padx=10, pady=10)
+transient_frame.grid(row=1, column=1, columnspan=1, padx=10, pady=10, sticky="nsew")
+transient_var = tk.BooleanVar(value=False)
+trans_models = ["Option 1", "Option 2", "Option 3"]
+
+tk.Checkbutton(transient_frame, text="Transient Outputs?", variable=transient_var).grid(row=0, column=0, columnspan=2, sticky='n')
+
+selected_trans_model = tk.StringVar(value=trans_models[0])
+transient_option_menu = tk.OptionMenu(transient_frame, selected_trans_model, *trans_models)
+transient_option_menu.grid(row=1, column=0, sticky='w')
+
+trans_entries = {}
+for i, (key, value) in enumerate(TRANSIENT_PARAMS.items()):
+    tk.Label(transient_frame, text=key).grid(row=i+1, column=0, sticky="w")
+    trans_entries[key] = tk.Entry(transient_frame, width=12)
+    trans_entries[key].grid(row=i+1, column=1)
+    trans_entries[key].insert(0, str(value))
+
+def update_total_exposure(*args):
+    try:
+        length = float(trans_entries["Exposure Length (s)"].get())
+        amount = int(trans_entries["Exposure Amount"].get())
+        total_exposure_var.set(f"{length * amount:.2f}")
+    except (ValueError, KeyError):
+        total_exposure_var.set("N/A")
+
+# Output Format Dropdown
+format_options = ["FITS", "PNG"]
+selected_format = tk.StringVar(value=format_options[0])
+format_output_menu = tk.OptionMenu(transient_frame, selected_format, *format_options)
+format_output_menu.grid(row=len(TRANSIENT_PARAMS) + 1, column=1, sticky='w')
+format_label = tk.Label(transient_frame, text="Output Format:").grid(row=len(TRANSIENT_PARAMS) + 1, column=0, sticky="w")
+
+# Add a responsive label for total exposure time
+total_exposure_var = tk.StringVar()
+tk.Label(transient_frame, text="Total Exposure Time (s):").grid(row=len(TRANSIENT_PARAMS) + 2, column=0, sticky="w")
+tk.Label(transient_frame, textvariable=total_exposure_var).grid(row=len(TRANSIENT_PARAMS) + 2, column=1, sticky="w")
+
+# Trace changes in the relevant entry fields to update the total
+for key in ["Exposure Length (s)", "Exposure Amount"]:
+    # To trace an Entry widget without a pre-existing StringVar, we can assign one
+    sv = tk.StringVar()
+    trans_entries[key].config(textvariable=sv)
+    sv.set(trans_entries[key].get()) # Initialize it with the current value
+    sv.trace_add("write", update_total_exposure)
+
+update_total_exposure() # Set initial value
+
+def toggle_transient_widgets(*args):
+    state = "normal" if transient_var.get() else "disabled"
+    transient_option_menu.config(state=state)
+    format_output_menu.config(state=state)
+    for entry in trans_entries.values():
+        entry.config(state=state)
+
+transient_var.trace_add("write", toggle_transient_widgets)
+toggle_transient_widgets() # Set initial state
+
+# Create frame for buttons and toggles
 button_frame = tk.Frame(root)
-button_frame.grid(row=1, column=1, sticky="nsew")
+button_frame.grid(row=1, column=2, sticky="nsew")
 
 # GUI widgets for Realistic Mode
 realistic_toggle_frame = tk.LabelFrame(button_frame, text="Star Field Mode", padx=10, pady=10)

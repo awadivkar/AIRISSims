@@ -46,15 +46,6 @@ OPTIONAL_PARAMS = {
     "Image Magnitude": 1.0
 }
 
-TRANSIENT_PARAMS = {
-    "Transient t90 (s)": 1.0,
-    "Transient Max Magnitude": 10.0,
-    "Transient Coordinates (X, Y)": (4784, 3190),
-    "Exposure Length (s)": 10.0,
-    "Exposure Amount": 1,
-    "Output Repository": "./transient_outputs"
-}
-
 ## Helper Functions
 
 def apply_binning(image, bin_size=3):
@@ -554,69 +545,8 @@ for i, (key, value) in enumerate(DEFAULTS.items()):
     entries[key].grid(row=i, column=1)
     entries[key].insert(0, str(value))
 
-
-# Create frame for transient options
-transient_frame = tk.LabelFrame(root, text="Transient Options", padx=10, pady=10)
-transient_frame.grid(row=1, column=1, columnspan=1, padx=10, pady=10, sticky="nsew")
-transient_var = tk.BooleanVar(value=False)
-trans_models = ["Option 1", "Option 2", "Option 3"]
-
-tk.Checkbutton(transient_frame, text="Transient Outputs?", variable=transient_var).grid(row=0, column=0, columnspan=2, sticky='n')
-
-selected_trans_model = tk.StringVar(value=trans_models[0])
-transient_option_menu = tk.OptionMenu(transient_frame, selected_trans_model, *trans_models)
-transient_option_menu.grid(row=1, column=0, sticky='w')
-
-trans_entries = {}
-for i, (key, value) in enumerate(TRANSIENT_PARAMS.items()):
-    tk.Label(transient_frame, text=key).grid(row=i+1, column=0, sticky="w")
-    trans_entries[key] = tk.Entry(transient_frame, width=12)
-    trans_entries[key].grid(row=i+1, column=1)
-    trans_entries[key].insert(0, str(value))
-
-def update_total_exposure(*args):
-    try:
-        length = float(trans_entries["Exposure Length (s)"].get())
-        amount = int(trans_entries["Exposure Amount"].get())
-        total_exposure_var.set(f"{length * amount:.2f}")
-    except (ValueError, KeyError):
-        total_exposure_var.set("N/A")
-
-# Output Format Dropdown
-format_options = ["FITS", "PNG"]
-selected_format = tk.StringVar(value=format_options[0])
-format_output_menu = tk.OptionMenu(transient_frame, selected_format, *format_options)
-format_output_menu.grid(row=len(TRANSIENT_PARAMS) + 1, column=1, sticky='w')
-format_label = tk.Label(transient_frame, text="Output Format:").grid(row=len(TRANSIENT_PARAMS) + 1, column=0, sticky="w")
-
-# Add a responsive label for total exposure time
-total_exposure_var = tk.StringVar()
-tk.Label(transient_frame, text="Total Exposure Time (s):").grid(row=len(TRANSIENT_PARAMS) + 2, column=0, sticky="w")
-tk.Label(transient_frame, textvariable=total_exposure_var).grid(row=len(TRANSIENT_PARAMS) + 2, column=1, sticky="w")
-
-# Trace changes in the relevant entry fields to update the total
-for key in ["Exposure Length (s)", "Exposure Amount"]:
-    # To trace an Entry widget without a pre-existing StringVar, we can assign one
-    sv = tk.StringVar()
-    trans_entries[key].config(textvariable=sv)
-    sv.set(trans_entries[key].get()) # Initialize it with the current value
-    sv.trace_add("write", update_total_exposure)
-
-update_total_exposure() # Set initial value
-
-def toggle_transient_widgets(*args):
-    state = "normal" if transient_var.get() else "disabled"
-    transient_option_menu.config(state=state)
-    format_output_menu.config(state=state)
-    for entry in trans_entries.values():
-        entry.config(state=state)
-
-transient_var.trace_add("write", toggle_transient_widgets)
-toggle_transient_widgets() # Set initial state
-
-# Create frame for buttons and toggles
 button_frame = tk.Frame(root)
-button_frame.grid(row=1, column=2, sticky="nsew")
+button_frame.grid(row=1, column=1, sticky="nsew")
 
 # GUI widgets for Realistic Mode
 realistic_toggle_frame = tk.LabelFrame(button_frame, text="Star Field Mode", padx=10, pady=10)
