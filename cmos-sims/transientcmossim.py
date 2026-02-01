@@ -18,8 +18,10 @@ from PIL import Image, ImageTk
 # Default Constants
 DEFAULTS = {
     "Pixel Size (um)": 3.76e-6,
-    "Sensor Width (px)": 9568,
-    "Sensor Height (px)": 6380,
+    # "Sensor Width (px)": 9568,
+    # "Sensor Height (px)": 6380,
+    "Sensor Width (px)": 50,
+    "Sensor Height (px)": 50,
     "Aperture": 0.111,
     "QE": 0.6,
     "Wavelength (nm)": 640,
@@ -32,7 +34,9 @@ DEFAULTS = {
     "Zero Point": 18,
     "PSF (sigma)": 3,
     "Exposure Time": 10,
-    "Num of Stars": 1000
+    # "Num of Stars": 1000
+    "Num of Stars": 0
+
 }
 
 OPTIONAL_PARAMS = {
@@ -50,12 +54,15 @@ TRANSIENT_PARAMS = {
     "Transient Rise End (s)": 1.0,
     "Transient Decay Start (s)": 5.0,
     "Transient Max Magnitude": 10.0,
-    "Transient Coordinates (X, Y)": (4784, 3190),
-    "Exposure Length (s)": 10.0,
-    "Exposure Amount": 1,
-    "Output Repository": "./transient_outputs"
+    # "Transient x-coordinate": 4784,
+    # "Transient y-coordinate": 3190,
+    "Transient x-coordinate": 25,
+    "Transient y-coordinate": 25,
+    "Exposure Length (s)": 2.0,
+    "Exposure Amount": 5,
 }
 
+transient_exposure_counter = 0
 ## Helper Functions
 
 def apply_binning(image, bin_size=3):
@@ -323,6 +330,30 @@ def generate_image(params, transient=False, binning=False, cosmic_rays=False, sk
             electrons = np.random.poisson(photons * params["QE"])
             add_psf(image, x, y, electrons, params["PSF (sigma)"])
 
+    if transient:
+        # Handle transient object simulation
+        transient_x, transient_y = params["Transient x-coordinate"], params["Transient y-coordinate"]
+        rise_end = params["Transient Rise End (s)"]
+        decay_start = params["Transient Decay Start (s)"]
+        max_mag = params["Transient Max Magnitude"]
+        exposure_length = params["Exposure Length (s)"]
+        global transient_exposure_counter      
+        t_i = transient_exposure_counter * exposure_length
+        t_f = t_i + exposure_length
+
+        # Determine transient magnitude based on light curve
+        peak_flux = 10 ** (-0.4 * (max_mag - params["Zero Point"]))
+        norm = peak_flux * np.exp((2 * rise_end)/(np.sqrt(rise_end * decay_start)))
+        def transient_flux(t):
+            return norm * np.exp((-rise_end / t) - (t / decay_start))
+        # Integrate flux over the exposure time
+        from scipy.integrate import quad
+        integrated_flux, _ = quad(transient_flux, t_i, t_f)
+        print(f"Transient integrated flux from {t_i}s to {t_f}s: {integrated_flux}")
+        photons = integrated_flux * params["QE"]
+        electrons = np.random.poisson(photons)
+        add_psf(image, transient_x, transient_y, electrons, params["PSF (sigma)"])
+
     if progress_update:
         progress_update(20, "Adding noise to image...")
 
@@ -373,15 +404,18 @@ def generate_image(params, transient=False, binning=False, cosmic_rays=False, sk
         noise = np.sqrt(signal + int(sky_background_var.get()) * params["Sky Background Rate (e-/px/s)"] + params["Dark Current (e-)"] * params["Exposure Time"] + params["Readout Noise (e-)"]**2)
         snr = signal / noise
         print("Expected Signal: ", signal, "Expected Noise: ", noise, "Expected SNR: ", snr)
-
     
     return image
 
 ### Image saving ###
 
-def save_image(image, filename, format):
+def save_image(image, filename, format, clip=None):
     if format == 'png':
-        plt.imsave(filename, image, cmap='gray')
+        plt.imshow(image, cmap="gray", vmin=0, vmax=clip)
+        plt.colorbar()
+        plt.savefig(filename)
+        plt.close()
+        # plt.imsave(filename, image, cmap='gray', vmin=0, vmax=clip)
     elif format == 'fits':
         fits.writeto(filename, image, overwrite=True)
 
@@ -408,8 +442,10 @@ def run_simulation():
               for key in OPTIONAL_PARAMS})
     params.update({key: float(trans_entries[key].get()) if trans_entries[key].get() else TRANSIENT_PARAMS[key]
               for key in TRANSIENT_PARAMS})
+    params.update({"Output Format": selected_format.get().lower()})
 
-    image = generate_image(params,
+    if not transient_var.get():
+        image = generate_image(params,
                            transient=transient_var.get(),
                            binning=binning_var.get(),
                            cosmic_rays=cosmic_rays_var.get(),
@@ -418,8 +454,7 @@ def run_simulation():
                            snr_calc=snr_calc_var.get(),
                            import_image=import_image_var.get(),
                            realistic=realistic_var.get(), progress_update=update_progress)
-    
-    if not transient_var.get():
+
         update_progress(9.9, 'Loading image rendering')
 
         fig = plt.figure(facecolor=(0.2, 0.2, 0.2))
@@ -479,7 +514,53 @@ def run_simulation():
         # plt.yscale('log')
         # plt.show()
     else:
-        update_progress(10, "Saving transient outputs...")
+        
+        global transient_exposure_counter
+        transient_exposure_counter = 0
+        global transient_flux_vals
+        transient_flux_vals = []
+        trans_image_max = 0
+        exposure_number = int(params["Exposure Amount"])
+        for i in range(exposure_number):
+            
+            # Handle transient object simulation
+            rise_end = params["Transient Rise End (s)"]
+            decay_start = params["Transient Decay Start (s)"]
+            max_mag = params["Transient Max Magnitude"]
+            exposure_length = params["Exposure Length (s)"]
+            t_i = transient_exposure_counter * exposure_length
+            t_f = t_i + exposure_length
+
+            # Determine transient magnitude based on light curve
+            peak_flux = 10 ** (-0.4 * (max_mag - params["Zero Point"]))
+            norm = peak_flux * np.exp((2 * rise_end)/(np.sqrt(rise_end * decay_start)))
+            def transient_flux(t):
+                return norm * np.exp((-rise_end / t) - (t / decay_start))
+            # Integrate flux over the exposure time
+            from scipy.integrate import quad
+            integrated_flux, _ = quad(transient_flux, t_i, t_f)
+            print(f"Transient integrated flux from {t_i}s to {t_f}s: {integrated_flux}")
+            transient_flux_vals.append(integrated_flux)
+
+        trans_image_max = max(transient_flux_vals) * params["QE"]
+
+        for flux in transient_flux_vals:
+            image = generate_image(params,
+                            transient=transient_var.get(),
+                            binning=binning_var.get(),
+                            cosmic_rays=cosmic_rays_var.get(),
+                            sky_background=sky_background_var.get(),
+                            moving_exposures=moving_exposures_var.get(),
+                            snr_calc=snr_calc_var.get(),
+                            import_image=import_image_var.get(),
+                            realistic=realistic_var.get(), progress_update=update_progress)
+            transient_exposure_counter += 1
+
+            # Save each transient exposure
+            filename = output_repository.get() + f"/transient_exposure_{transient_exposure_counter}.png"
+            save_image(image, filename, params["Output Format"], clip=trans_image_max / 36)
+
+            update_progress(10, "Saving transient outputs...")
         messagebox.showinfo("Simulation Complete", "Transient simulation complete. Outputs saved to specified repository.")
         win.destroy()
 
@@ -598,20 +679,27 @@ def update_total_exposure(*args):
 # Output Format Dropdown
 format_options = ["FITS", "PNG"]
 selected_format = tk.StringVar(value=format_options[0])
+format_label = tk.Label(transient_frame, text="Output Format:")
+format_label.grid(row=len(TRANSIENT_PARAMS) + 1, column=0, sticky="w")
 format_output_menu = tk.OptionMenu(transient_frame, selected_format, *format_options)
 format_output_menu.grid(row=len(TRANSIENT_PARAMS) + 1, column=1, sticky='w')
-format_label = tk.Label(transient_frame, text="Output Format:").grid(row=len(TRANSIENT_PARAMS) + 1, column=0, sticky="w")
+
+tk.Label(transient_frame, text="Output Repository:").grid(row=len(TRANSIENT_PARAMS) + 2, column=0, sticky="w")
+output_repository = tk.Entry(transient_frame, width=12)
+output_repository.grid(row=len(TRANSIENT_PARAMS) + 2, column=1)
+output_repository.insert(0, "./transient_outputs")
 
 # Add a responsive label for total exposure time
 total_exposure_var = tk.StringVar()
-tk.Label(transient_frame, text="Total Exposure Time (s):").grid(row=len(TRANSIENT_PARAMS) + 2, column=0, sticky="w")
-tk.Label(transient_frame, textvariable=total_exposure_var).grid(row=len(TRANSIENT_PARAMS) + 2, column=1, sticky="w")
+tk.Label(transient_frame, text="Total Exposure Time (s):").grid(row=len(TRANSIENT_PARAMS) + 3, column=0, sticky="w")
+tk.Label(transient_frame, textvariable=total_exposure_var).grid(row=len(TRANSIENT_PARAMS) + 3, column=1, sticky="w")
 
 # Trace changes in the relevant entry fields to update the total
 for key in ["Exposure Length (s)", "Exposure Amount"]:
     # To trace an Entry widget without a pre-existing StringVar, we can assign one
     sv = tk.StringVar()
     trans_entries[key].config(textvariable=sv)
+    print(f"Tracing changes for {key}")
     sv.set(trans_entries[key].get()) # Initialize it with the current value
     sv.trace_add("write", update_total_exposure)
 
@@ -700,6 +788,9 @@ for e in opt_entries.values():
              relief="flat",
              bd=1,)
 
+preview_frame = tk.LabelFrame(root, text="Imported Image Preview", padx=10, pady=10)
+preview_frame.grid(row=1, column=2, padx=10, pady=10, sticky="n")
+
 # Create frame for action buttons
 button_frame = tk.Frame(root)
 button_frame.grid(row=3, column=0, columnspan=2, padx=20, pady=20)
@@ -709,8 +800,5 @@ tk.Button(button_frame, text="Import Image", command=import_image, width=20, hei
 
 global current_progress
 current_progress = 'Initializing...'
-
-preview_frame = tk.LabelFrame(root, text="Imported Image Preview", padx=10, pady=10)
-preview_frame.grid(row=1, column=2, padx=10, pady=10, sticky="n")
     
 root.mainloop()
